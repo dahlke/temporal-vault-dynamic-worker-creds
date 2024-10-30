@@ -4,6 +4,7 @@
 - `jq`
 - `vault`
 - `terraform`
+- `temporal`
 
 ## Walkthrough
 
