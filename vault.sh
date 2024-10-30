@@ -18,13 +18,6 @@ vault write pki/root/generate/internal \
 
 vault write pki/roles/temporal-client-cert \
     allowed_domains="dahlke.io" \
-    allow_subdomains=true \
-    max_ttl="720h" \
-    key_type="ec" \
-    key_bits=384
-
-vault write pki/roles/temporal-client-cert \
-    allowed_domains="dahlke.io" \
     allow_subdomains=true \ max_ttl="720h" \
     key_type="rsa" \
     key_bits=2048 \
