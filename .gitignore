@@ -3,3 +3,4 @@
 cert_output.json
 *.tfstate*
 .DS_Store
+secrets.sh

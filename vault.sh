@@ -1,10 +1,4 @@
-
-export VAULT_ADDR='http://127.0.0.1:8200'
-export VAULT_TOKEN='root'
-export TEMPORAL_ADDRESS="neil-terraform-demo-f188279a.sdvdw.tmprl.cloud:7233"
-export TEMPORAL_NAMESPACE="neil-terraform-demo-f188279a.sdvdw"
-export TEMPORAL_TLS_CERT="$(pwd)/client.pem"
-export TEMPORAL_TLS_KEY="$(pwd)/client.key"
+#!/bin/bash
 
 rm *.pem *.key
 vault secrets disable pki
@@ -51,5 +45,3 @@ cat cert_output.json | jq -r '.data.ca_chain[]' > ca_chain.pem
 
 tcld namespace accepted-client-ca add --namespace $TEMPORAL_NAMESPACE --ca-certificate $(cat ca_chain.pem | base64)
 tcld namespace accepted-client-ca remove --namespace $TEMPORAL_NAMESPACE --fp $(tcld namespace accepted-client-ca list --namespace $TEMPORAL_NAMESPACE | jq '.[0].fingerprint')
-
-# temporal workflow list
