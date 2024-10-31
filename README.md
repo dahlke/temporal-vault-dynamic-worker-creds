@@ -37,4 +37,4 @@ cert is uploaded to the namespace.
 
 ```bash
 ./vault.sh
-```
+```# temporal-vault-certs
