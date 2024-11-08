@@ -51,6 +51,9 @@ spec:
   format: pem
   expiryOffset: 5s
   ttl: 60s
+  rolloutRestartTargets:
+    - kind: Deployment
+      name: temporal-infra-worker
 ---
 apiVersion: v1
 kind: ConfigMap
