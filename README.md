@@ -114,7 +114,7 @@ vault write pki/roles/temporal-infra-worker \
 vault policy write temporal-infra-worker - <<EOF
 # Allow issuing certificates
 path "pki/issue/temporal-infra-worker" {
-   capabilities = ["create", "update"]
+   capabilities = ["create", "read", "update"]
 }
 
 # Allow reading certificate configuration
