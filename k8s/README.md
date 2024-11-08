@@ -75,30 +75,47 @@ vault auth enable kubernetes
 vault write auth/kubernetes/config \
       kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"
 
-vault policy write internal-app - <<EOF
+# vault policy write internal-app - <<EOF
+# path "internal/data/database/config" {
+   # capabilities = ["read"]
+# }
+# EOF
+
+vault policy write temporal-worker - <<EOF
 path "internal/data/database/config" {
    capabilities = ["read"]
 }
 EOF
 
-vault write auth/kubernetes/role/internal-app \
-      bound_service_account_names=internal-app \
-      bound_service_account_namespaces=default \
-      policies=internal-app \
-      ttl=24h
+# vault write auth/kubernetes/role/internal-app \
+      # bound_service_account_names=internal-app \
+      # bound_service_account_namespaces=default \
+      # policies=internal-app \
+      # ttl=24h
 
+vault write auth/kubernetes/role/temporal-worker \
+      bound_service_account_names=temporal-worker \
+      bound_service_account_namespaces=default \
+      policies=temporal-worker \
+      ttl=24h
 exit
 ```
 
 ```bash
 kubectl get serviceaccounts
-kubectl create sa internal-app
+# kubectl create sa internal-app
+kubectl create sa temporal-worker
 kubectl get serviceaccounts
 
-kubectl apply -f deployment-orgchart.yaml
+# kubectl apply -f deployment-orgchart.yaml
+kubectl apply -f deployment-temporal-worker.yaml
+
+# kubectl exec \
+      # $(kubectl get pod -l app=orgchart -o jsonpath="{.items[0].metadata.name}") \
+      # -c orgchart -- cat /vault/secrets/database-config.txt
 
 kubectl exec \
-      $(kubectl get pod -l app=orgchart -o jsonpath="{.items[0].metadata.name}") \
+      $(kubectl get pod -l app=temporal-worker -o jsonpath="{.items[0].metadata.name}") \
       -c orgchart -- cat /vault/secrets/database-config.txt
 ```
 
