@@ -1,32 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-infra-worker-config
+data:
+  TEMPORAL_HOST_URL: "neil-terraform-demo-f188279a.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-terraform-demo-f188279a.sdvdw"
+  TEMPORAL_TASK_QUEUE: "infra-worker"
+  TF_VAR_prefix: "neil-terraform-demo-f188279a"
+  ENCRYPT_PAYLOADS: "true"  # or "false" depending on your needs
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: temporal-secrets
+type: Opaque
+data:
+  cloud-api-key: <base64-encoded-api-key>  # Replace with: echo -n "your-api-key" | base64
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-   name: temporal-worker
+   name: temporal-infra-worker
    labels:
-      app: temporal-worker
+      app: temporal-infra-worker
 spec:
    selector:
       matchLabels:
-         app: temporal-worker
+         app: temporal-infra-worker
    replicas: 1
    template:
       metadata:
          annotations:
             vault.hashicorp.com/agent-inject: 'true'
             vault.hashicorp.com/agent-inject-status: 'update'
-            vault.hashicorp.com/role: 'temporal-worker'
+            vault.hashicorp.com/role: 'temporal-infra-worker'
             vault.hashicorp.com/agent-inject-secret-database-config.txt: 'internal/data/database/config'
             vault.hashicorp.com/agent-inject-template-database-config.txt: |
                {{- with secret "internal/data/database/config" -}}
                postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@localhost:5432/dbname
                {{- end }}
          labels:
-            app: temporal-worker
+            app: temporal-infra-worker
       spec:
-         serviceAccountName: temporal-worker
+         serviceAccountName: temporal-infra-worker
          containers:
-            - name: temporal-worker
+            - name: temporal-infra-worker
               image: eklhad/temporal-infra-worker:latest
+              env:
+                - name: TEMPORAL_HOST_URL
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: TEMPORAL_HOST_URL
+                - name: TEMPORAL_NAMESPACE
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: TEMPORAL_NAMESPACE
+                - name: TEMPORAL_TASK_QUEUE
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: TEMPORAL_TASK_QUEUE
+                - name: TF_VAR_prefix
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: TF_VAR_prefix
+                - name: ENCRYPT_PAYLOADS
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: ENCRYPT_PAYLOADS
+                - name: TEMPORAL_CLOUD_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: temporal-secrets
+                      key: cloud-api-key
               resources:
                 limits:
                   cpu: "0.5"

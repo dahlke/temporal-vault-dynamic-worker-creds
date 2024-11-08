@@ -81,7 +81,7 @@ vault write auth/kubernetes/config \
 # }
 # EOF
 
-vault policy write temporal-worker - <<EOF
+vault policy write temporal-infra-worker - <<EOF
 path "internal/data/database/config" {
    capabilities = ["read"]
 }
@@ -93,10 +93,10 @@ EOF
       # policies=internal-app \
       # ttl=24h
 
-vault write auth/kubernetes/role/temporal-worker \
-      bound_service_account_names=temporal-worker \
+vault write auth/kubernetes/role/temporal-infra-worker \
+      bound_service_account_names=temporal-infra-worker \
       bound_service_account_namespaces=default \
-      policies=temporal-worker \
+      policies=temporal-infra-worker \
       ttl=24h
 exit
 ```
@@ -104,18 +104,18 @@ exit
 ```bash
 kubectl get serviceaccounts
 # kubectl create sa internal-app
-kubectl create sa temporal-worker
+kubectl create sa temporal-infra-worker
 kubectl get serviceaccounts
 
 # kubectl apply -f deployment-orgchart.yaml
-kubectl apply -f deployment-temporal-worker.yaml
+kubectl apply -f deployment-temporal-infra-worker.yaml
 
 # kubectl exec \
       # $(kubectl get pod -l app=orgchart -o jsonpath="{.items[0].metadata.name}") \
       # -c orgchart -- cat /vault/secrets/database-config.txt
 
 kubectl exec \
-      $(kubectl get pod -l app=temporal-worker -o jsonpath="{.items[0].metadata.name}") \
+      $(kubectl get pod -l app=temporal-infra-worker -o jsonpath="{.items[0].metadata.name}") \
       -c orgchart -- cat /vault/secrets/database-config.txt
 ```
 
@@ -134,24 +134,24 @@ vault write pki/root/generate/internal \
     ttl=8760h
 
 # Configure the PKI role
-vault write pki/roles/temporal-worker \
-    allowed_domains="temporal-worker.local" \
+vault write pki/roles/temporal-infra-worker \
+    allowed_domains="temporal-infra-worker.local" \
     allow_subdomains=true \
     max_ttl="720h" \
     key_usage="DigitalSignature,KeyEncipherment" \
     ext_key_usage="ServerAuth,ClientAuth"
 
 # Create Vault policy for workers
-vault policy write temporal-worker-cert - <<EOF
-path "pki/issue/temporal-worker" {
+vault policy write temporal-infra-worker-cert - <<EOF
+path "pki/issue/temporal-infra-worker" {
   capabilities = ["create", "update"]
 }
 EOF
 
 # Create Kubernetes auth role
-vault write auth/kubernetes/role/temporal-worker \
-    bound_service_account_names=temporal-worker \
+vault write auth/kubernetes/role/temporal-infra-worker \
+    bound_service_account_names=temporal-infra-worker \
     bound_service_account_namespaces=default \
-    policies=temporal-worker-cert \
+    policies=temporal-infra-worker-cert \
     ttl=1h
 ```
