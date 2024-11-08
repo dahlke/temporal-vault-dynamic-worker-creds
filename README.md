@@ -11,6 +11,8 @@
 - Terraform
 - Vault
 - Kubernetes
+- Run Vault and the Operator in their own namespace
+- Update all of the namespace stuff
 
 ## Vault and Minikube Startup
 
@@ -20,15 +22,7 @@ Start up a Minikube cluster with 4 CPUs and 8GB of memory.
 minikube start --driver=docker --cpus=4 --memory=8192
 ```
 
-### Option 1: Vault in dev mode from CLI
-
-Start Vault in dev mode with a root token of `root`.
-
-```bash
-vault server -dev -dev-root-token-id="root"
-```
-
-### Option 2: Vault in dev mode in Kubernetes
+### Run Vault in dev mode in Kubernetes
 
 Add the HashiCorp Helm repository, create a namespace for Vault, and install Vault in Minikube.
 
@@ -38,24 +32,20 @@ helm repo update
 
 kubectl create namespace vault
 
-# TODO: Use a -n vault namespace
 helm install vault hashicorp/vault --set "server.dev.enabled=true"
+helm install vault-secrets-operator hashicorp/vault-secrets-operator
 
 EOF
 ```
 
-Port forward to Vault.
+Port forward locally to Vault installed in Kubernetes.
 
 ```bash
 # kubectl port-forward -n vault svc/vault 8200:8200
 kubectl port-forward svc/vault 8200:8200
 ```
 
-Open the Vault UI in your browser.
-
-```bash
-open http://127.0.0.1:8200
-```
+The Vault UI is now available at [`http://127.0.0.1:8200`](http://127.0.0.1:8200).
 
 ## Configure Vault
 
@@ -66,7 +56,7 @@ export VAULT_ADDR='http://127.0.0.1:8200'
 export VAULT_TOKEN='root'
 ```
 
-Enable and configure the Kubernetes auth method.
+### Enable and configure the Kubernetes auth method.
 
 ```bash
 kubectl exec -it vault-0 -- /bin/sh
@@ -93,19 +83,7 @@ vault write auth/kubernetes/role/temporal-infra-worker \
 exit
 ```
 
-```bash
-kubectl get serviceaccounts
-kubectl create sa temporal-infra-worker
-kubectl get serviceaccounts
-
-kubectl apply -f deployment-temporal-infra-worker.yaml
-
-kubectl exec \
-      $(kubectl get pod -l app=temporal-infra-worker -o jsonpath="{.items[0].metadata.name}") \
-      -c orgchart -- cat /vault/secrets/database-config.txt
-```
-
-Enable and configure the PKI secrets engine.
+### Enable and Configure the PKI Secrets Engine
 
 ```bash
 vault secrets disable pki
@@ -149,4 +127,24 @@ path "pki/roles/temporal-infra-worker" {
    capabilities = ["read"]
 }
 EOF
+```
+
+### Deploy Temporal Worker
+
+#### With Vault Agent Injector
+
+Deploy the Temporal worker.
+
+```bash
+kubectl apply -f deployment-temporal-infra-worker.yaml
+```
+
+#### With Vault Secrets Operator
+
+```bash
+helm install vault-secrets-operator hashicorp/vault-secrets-operator
+```
+
+```bash
+TODO
 ```

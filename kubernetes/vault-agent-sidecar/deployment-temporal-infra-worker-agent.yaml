@@ -1,0 +1,91 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: temporal-infra-worker
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-infra-worker-config
+data:
+  TEMPORAL_HOST_URL: "neil-terraform-demo-fcc73786.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-terraform-demo-fcc73786.sdvdw"
+  TEMPORAL_TASK_QUEUE: "provision-infra"
+  TF_VAR_prefix: "neil"
+  ENCRYPT_PAYLOADS: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   name: temporal-infra-worker
+   labels:
+      app: temporal-infra-worker
+spec:
+   selector:
+      matchLabels:
+         app: temporal-infra-worker
+   replicas: 1
+   template:
+      metadata:
+         annotations:
+            vault.hashicorp.com/agent-inject: 'true'
+            vault.hashicorp.com/agent-inject-status: 'update'
+            vault.hashicorp.com/role: 'temporal-infra-worker'
+            vault.hashicorp.com/agent-inject-template-tls-cert.pem: |
+               {{- with secret "pki/issue/temporal-infra-worker" "common_name=worker.dahlke.io" "ttl=30m" -}}
+               {{ .Data.certificate }}
+               {{- end }}
+            vault.hashicorp.com/agent-inject-template-tls-key.pem: |
+               {{- with secret "pki/issue/temporal-infra-worker" "common_name=worker.dahlke.io" "ttl=30m" -}}
+               {{ .Data.private_key }}
+               {{- end }}
+         labels:
+            app: temporal-infra-worker
+      spec:
+         serviceAccountName: temporal-infra-worker
+         containers:
+            - name: temporal-infra-worker
+              image: eklhad/temporal-infra-worker:latest
+              env:
+                - name: TEMPORAL_HOST_URL
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: TEMPORAL_HOST_URL
+                - name: TEMPORAL_NAMESPACE
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: TEMPORAL_NAMESPACE
+                - name: TEMPORAL_TASK_QUEUE
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: TEMPORAL_TASK_QUEUE
+                - name: TF_VAR_prefix
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: TF_VAR_prefix
+                - name: ENCRYPT_PAYLOADS
+                  valueFrom:
+                    configMapKeyRef:
+                      name: temporal-infra-worker-config
+                      key: ENCRYPT_PAYLOADS
+                - name: TEMPORAL_MTLS_TLS_CERT
+                  value: /vault/secrets/tls-cert.pem
+                - name: TEMPORAL_MTLS_TLS_KEY
+                  value: /vault/secrets/tls-key.pem
+                - name: TEMPORAL_CLOUD_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: temporal-secrets
+                      key: cloud-api-key
+              resources:
+                limits:
+                  cpu: "0.5"
+                  memory: "512Mi"
+                requests:
+                  cpu: "0.2"
+                  memory: "256Mi"

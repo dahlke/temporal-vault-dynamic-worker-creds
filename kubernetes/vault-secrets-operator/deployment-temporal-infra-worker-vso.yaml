@@ -1,3 +1,38 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: temporal-infra-worker
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: vault-auth-temporal-infra-worker
+spec:
+  vaultConnectionRef: vault/vault-connection
+  method: kubernetes
+  mount: kubernetes
+  # allowedNamespaces:
+    # - default
+  kubernetes:
+    role: temporal-infra-worker
+    serviceAccount: temporal-infra-worker
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultDynamicSecret
+metadata:
+  name: vso-tls-cert-temporal-infra-worker
+spec:
+  vaultAuthRef: vault-auth-temporal-infra-worker
+  mount: pki
+  path: issue/temporal-infra-worker
+  destination:
+    create: true
+    name: vso-tls-cert-temporal-infra-worker
+  rolloutRestartTargets:
+  - kind: Deployment
+    name: temporal-infra-worker
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -22,18 +57,6 @@ spec:
    replicas: 1
    template:
       metadata:
-         annotations:
-            vault.hashicorp.com/agent-inject: 'true'
-            vault.hashicorp.com/agent-inject-status: 'update'
-            vault.hashicorp.com/role: 'temporal-infra-worker'
-            vault.hashicorp.com/agent-inject-template-tls-cert.pem: |
-               {{- with secret "pki/issue/temporal-infra-worker" "common_name=worker.dahlke.io" "ttl=30m" -}}
-               {{ .Data.certificate }}
-               {{- end }}
-            vault.hashicorp.com/agent-inject-template-tls-key.pem: |
-               {{- with secret "pki/issue/temporal-infra-worker" "common_name=worker.dahlke.io" "ttl=30m" -}}
-               {{ .Data.private_key }}
-               {{- end }}
          labels:
             app: temporal-infra-worker
       spec:
