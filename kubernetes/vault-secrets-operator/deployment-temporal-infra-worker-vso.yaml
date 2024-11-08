@@ -112,9 +112,9 @@ spec:
                       name: temporal-infra-worker-config
                       key: ENCRYPT_PAYLOADS
                 - name: TEMPORAL_MTLS_TLS_CERT
-                  value: /vault/secrets/tls-cert.pem
+                  value: /vault/secrets/cert
                 - name: TEMPORAL_MTLS_TLS_KEY
-                  value: /vault/secrets/tls-key.pem
+                  value: /vault/secrets/key
                 - name: TEMPORAL_CLOUD_API_KEY
                   valueFrom:
                     secretKeyRef:
