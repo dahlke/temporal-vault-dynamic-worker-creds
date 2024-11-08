@@ -9,14 +9,6 @@ data:
   TF_VAR_prefix: "neil-terraform-demo-f188279a"
   ENCRYPT_PAYLOADS: "true"  # or "false" depending on your needs
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: temporal-secrets
-type: Opaque
-data:
-  cloud-api-key: <base64-encoded-api-key>  # Replace with: echo -n "your-api-key" | base64
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:

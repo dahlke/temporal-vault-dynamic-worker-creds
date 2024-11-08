@@ -6,3 +6,4 @@ cert_output.json
 .DS_Store
 secrets.sh
 .terraform*
+secrets.yaml
