@@ -6,13 +6,11 @@
 - `kubectl`
 
 ## TODO
-- https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar
-- https://keithtenzer.com/temporal/Deploying_Temporal_Worker_on_Kubernetes/
-- Terraform
-- Vault
-- Kubernetes
+
+- Terraform writeup
+- Vault writeup
+- Kubernetes writeup
 - Run Vault and the Operator in their own namespace
-- Update all of the namespace stuff
 
 ## Vault and Minikube Startup
 
@@ -136,15 +134,12 @@ EOF
 Deploy the Temporal worker.
 
 ```bash
-kubectl apply -f deployment-temporal-infra-worker.yaml
+kubectl apply -f kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
 ```
 
 #### With Vault Secrets Operator
 
 ```bash
 helm install vault-secrets-operator hashicorp/vault-secrets-operator
-```
-
-```bash
-TODO
+kubectl apply -f kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
 ```
