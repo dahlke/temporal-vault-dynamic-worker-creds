@@ -3,10 +3,10 @@ kind: ConfigMap
 metadata:
   name: temporal-infra-worker-config
 data:
-  TEMPORAL_HOST_URL: "neil-terraform-demo-f188279a.sdvdw.tmprl.cloud:7233"
-  TEMPORAL_NAMESPACE: "neil-terraform-demo-f188279a.sdvdw"
-  TEMPORAL_TASK_QUEUE: "infra-worker"
-  TF_VAR_prefix: "neil-terraform-demo-f188279a"
+  TEMPORAL_HOST_URL: "neil-terraform-demo-fcc73786.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-terraform-demo-fcc73786.sdvdw"
+  TEMPORAL_TASK_QUEUE: "provision-infra"
+  TF_VAR_prefix: "neil"
   ENCRYPT_PAYLOADS: "true"  # or "false" depending on your needs
 ---
 apiVersion: apps/v1
@@ -69,6 +69,10 @@ spec:
                     secretKeyRef:
                       name: temporal-secrets
                       key: cloud-api-key
+                - name: TEMPORAL_MTLS_TLS_CERT
+                  value: /etc/certs/tls.crt
+                - name: TEMPORAL_MTLS_TLS_KEY
+                  value: /etc/certs/tls.key
               resources:
                 limits:
                   cpu: "0.5"
@@ -76,3 +80,11 @@ spec:
                 requests:
                   cpu: "0.2"
                   memory: "256Mi"
+              volumeMounts:
+                - mountPath: /etc/certs
+                  name: certs
+         volumes:
+           - name: certs
+             secret:
+               defaultMode: 420
+               secretName: temporal-secrets

@@ -7,6 +7,7 @@
 
 ## TODO
 - https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar
+- https://keithtenzer.com/temporal/Deploying_Temporal_Worker_on_Kubernetes/
 
 ## Vault and Minikube Startup
 
@@ -122,36 +123,28 @@ kubectl exec \
 Enable and configure the PKI secrets engine.
 
 ```bash
-# Enable PKI secrets engine
+vault secrets disable pki
 vault secrets enable pki
+vault secrets tune -max-lease-ttl=87600h pki
 
-# Tune the PKI secrets engine
-vault secrets tune -max-lease-ttl=8760h pki
+vault write pki/config/urls \
+     issuing_certificates="$VAULT_ADDR/v1/pki/ca" \
+     crl_distribution_points="$VAULT_ADDR/v1/pki/crl"
 
-# Create the root CA
 vault write pki/root/generate/internal \
-    common_name="Temporal Worker CA" \
-    ttl=8760h
+    common_name="dahlke" \
+    organization="dahlke" \
+    key_type="rsa" \
+    key_bits=4096 \
+    exclude_cn_from_sans=true
 
-# Configure the PKI role
 vault write pki/roles/temporal-infra-worker \
-    allowed_domains="temporal-infra-worker.local" \
-    allow_subdomains=true \
-    max_ttl="720h" \
-    key_usage="DigitalSignature,KeyEncipherment" \
-    ext_key_usage="ServerAuth,ClientAuth"
-
-# Create Vault policy for workers
-vault policy write temporal-infra-worker-cert - <<EOF
-path "pki/issue/temporal-infra-worker" {
-  capabilities = ["create", "update"]
-}
-EOF
-
-# Create Kubernetes auth role
-vault write auth/kubernetes/role/temporal-infra-worker \
-    bound_service_account_names=temporal-infra-worker \
-    bound_service_account_namespaces=default \
-    policies=temporal-infra-worker-cert \
-    ttl=1h
+    allowed_domains="dahlke.io" \
+    allow_subdomains=true \ max_ttl="720h" \
+    key_type="rsa" \
+    key_bits=2048 \
+    allow_any_name=true \
+    key_usage="DigitalSignature" \
+    ext_key_usage="ClientAuth" \
+    require_cn=false
 ```

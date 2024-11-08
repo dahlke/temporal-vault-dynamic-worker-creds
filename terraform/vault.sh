@@ -1,6 +1,9 @@
 #!/bin/bash
 
+
 rm *.pem *.key
+
+# TODO: do this config from Terraform.
 
 vault secrets disable pki
 vault secrets enable pki
@@ -17,7 +20,7 @@ vault write pki/root/generate/internal \
     key_bits=4096 \
     exclude_cn_from_sans=true
 
-vault write pki/roles/temporal-client-cert \
+vault write pki/roles/temporal-infra-worker \
     allowed_domains="dahlke.io" \
     allow_subdomains=true \ max_ttl="720h" \
     key_type="rsa" \
@@ -27,7 +30,7 @@ vault write pki/roles/temporal-client-cert \
     ext_key_usage="ClientAuth" \
     require_cn=false
 
-vault write -format=json pki/issue/temporal-client-cert \
+vault write -format=json pki/issue/temporal-infra-worker \
     organization="dahlke" \
     ttl="720h" \
     private_key_format="pkcs8" \
