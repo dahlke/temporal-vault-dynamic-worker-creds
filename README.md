@@ -8,6 +8,9 @@
 ## TODO
 - https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar
 - https://keithtenzer.com/temporal/Deploying_Temporal_Worker_on_Kubernetes/
+- Terraform
+- Vault
+- Kubernetes
 
 ## Vault and Minikube Startup
 
@@ -35,7 +38,7 @@ helm repo update
 
 kubectl create namespace vault
 
-# TODO: -n vault
+# TODO: Use a -n vault namespace
 helm install vault hashicorp/vault --set "server.dev.enabled=true"
 
 EOF
@@ -76,23 +79,11 @@ vault auth enable kubernetes
 vault write auth/kubernetes/config \
       kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"
 
-# vault policy write internal-app - <<EOF
-# path "internal/data/database/config" {
-   # capabilities = ["read"]
-# }
-# EOF
-
 vault policy write temporal-infra-worker - <<EOF
 path "internal/data/database/config" {
    capabilities = ["read"]
 }
 EOF
-
-# vault write auth/kubernetes/role/internal-app \
-      # bound_service_account_names=internal-app \
-      # bound_service_account_namespaces=default \
-      # policies=internal-app \
-      # ttl=24h
 
 vault write auth/kubernetes/role/temporal-infra-worker \
       bound_service_account_names=temporal-infra-worker \
@@ -104,16 +95,10 @@ exit
 
 ```bash
 kubectl get serviceaccounts
-# kubectl create sa internal-app
 kubectl create sa temporal-infra-worker
 kubectl get serviceaccounts
 
-# kubectl apply -f deployment-orgchart.yaml
 kubectl apply -f deployment-temporal-infra-worker.yaml
-
-# kubectl exec \
-      # $(kubectl get pod -l app=orgchart -o jsonpath="{.items[0].metadata.name}") \
-      # -c orgchart -- cat /vault/secrets/database-config.txt
 
 kubectl exec \
       $(kubectl get pod -l app=temporal-infra-worker -o jsonpath="{.items[0].metadata.name}") \
@@ -147,4 +132,21 @@ vault write pki/roles/temporal-infra-worker \
     key_usage="DigitalSignature" \
     ext_key_usage="ClientAuth" \
     require_cn=false
+
+vault policy write temporal-infra-worker - <<EOF
+# Allow issuing certificates
+path "pki/issue/temporal-infra-worker" {
+   capabilities = ["create", "update"]
+}
+
+# Allow reading certificate configuration
+path "pki/config/*" {
+   capabilities = ["read"]
+}
+
+# Allow reading role configuration
+path "pki/roles/temporal-infra-worker" {
+   capabilities = ["read"]
+}
+EOF
 ```
