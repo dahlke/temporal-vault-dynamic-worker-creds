@@ -26,8 +26,6 @@ spec:
             vault.hashicorp.com/agent-inject: 'true'
             vault.hashicorp.com/agent-inject-status: 'update'
             vault.hashicorp.com/role: 'temporal-infra-worker'
-            vault.hashicorp.com/agent-inject-secret-tls-cert.pem: 'pki/issue/temporal-infra-worker'
-            vault.hashicorp.com/agent-inject-secret-tls-key.pem: 'pki/issue/temporal-infra-worker'
             vault.hashicorp.com/agent-inject-template-tls-cert.pem: |
                {{- with secret "pki/issue/temporal-infra-worker" "common_name=worker.dahlke.io" "ttl=30m" -}}
                {{ .Data.certificate }}
