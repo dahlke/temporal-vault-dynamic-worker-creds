@@ -1,6 +1,8 @@
 *.pem
 *.key
+*.crt
 cert_output.json
 *.tfstate*
 .DS_Store
 secrets.sh
+.terraform*
