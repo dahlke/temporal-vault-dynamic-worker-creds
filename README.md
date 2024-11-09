@@ -11,6 +11,7 @@
 - Vault writeup
 - Kubernetes writeup
 - Run Vault and the Operator in their own namespace
+- Rename the deployments and secrets to match their purpose
 
 ## Vault and Minikube Startup
 

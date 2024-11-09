@@ -50,7 +50,7 @@ spec:
   commonName: worker.dahlke.io
   format: pem
   expiryOffset: 5s
-  ttl: 60s
+  ttl: 300s
   rolloutRestartTargets:
     - kind: Deployment
       name: temporal-infra-worker
