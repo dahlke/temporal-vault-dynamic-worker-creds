@@ -7,3 +7,4 @@ cert_output.json
 secrets.sh
 .terraform*
 secrets.yaml
+setcloudenv.sh

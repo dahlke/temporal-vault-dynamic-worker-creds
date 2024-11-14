@@ -1,29 +1,29 @@
 # Rotating Temporal Workers Certificates in Kubernetes with Vault
 
 ## Requirements
+
 - `minikube`
+- `terraform`
 - `vault`
 - `kubectl`
 
-## TODO
-
-- Terraform writeup
-- Vault writeup
-- Kubernetes writeup
-- Run Vault and the Operator in their own namespace
-- Rename the deployments and secrets to match their purpose
+This is a sample project to rotate the certificates for a Temporal worker running in Kubernetes,
+using Vault's PKI Secrets Engine to generate certs and deliver them to the worker pods with either
+the Vault Agent Injector or the Vault Secrets Operator.
 
 ## Vault and Minikube Startup
 
-Start up a Minikube cluster with 4 CPUs and 8GB of memory.
+Start up a Minikube cluster with 2 CPUs and 4GB of memory.
 
 ```bash
-minikube start --driver=docker --cpus=4 --memory=8192
+minikube start --driver=docker --cpus=2 --memory=4096
 ```
 
 ### Run Vault in dev mode in Kubernetes
 
-Add the HashiCorp Helm repository, create a namespace for Vault, and install Vault in Minikube.
+Add the HashiCorp Helm repository, create a namespace for Vault, and install Vault in Minikube in
+Dev mode. We'll also install the [Vault Secrets Operator](https://github.com/hashicorp/vault-secrets-operator)
+at this stage.
 
 ```bash
 helm repo add hashicorp https://helm.releases.hashicorp.com
@@ -31,106 +31,115 @@ helm repo update
 
 kubectl create namespace vault
 
-helm install vault hashicorp/vault --set "server.dev.enabled=true"
-helm install vault-secrets-operator hashicorp/vault-secrets-operator
-
-EOF
+helm install -n vault vault hashicorp/vault --set "server.dev.enabled=true"
+helm install -n vault vault-secrets-operator hashicorp/vault-secrets-operator
 ```
 
-Port forward locally to Vault installed in Kubernetes.
+For ease of use while developing, port forward locally to Vault installed in Kubernetes.
 
 ```bash
-# kubectl port-forward -n vault svc/vault 8200:8200
-kubectl port-forward svc/vault 8200:8200
+kubectl port-forward -n vault svc/vault 8200:8200
 ```
 
 The Vault UI is now available at [`http://127.0.0.1:8200`](http://127.0.0.1:8200).
 
-## Configure Vault
+### Configure Vault and Create Temporal Namespace w/ Terraform
 
-In a new terminal, set up Vault env variables.
+Now that Vault is running, initialize Terraform.
 
 ```bash
+terraform init
+```
+
+Get the Kubernetes cluster IP address and set the Vault address and token. Since we're running Vault
+in dev mode and port forwarding locally, we can use the root token and localhost for the Vault address.
+
+```bash
+export KUBERNETES_PORT_443_TCP_ADDR=$(kubectl get svc kubernetes -o jsonpath='{.spec.clusterIP}')
 export VAULT_ADDR='http://127.0.0.1:8200'
 export VAULT_TOKEN='root'
 ```
 
-### Enable and configure the Kubernetes auth method.
+Then apply the Terraform configuration. The Terraform configuration will mount the PKI engine in Vault,
+create a root CA, and create a role and certificate for the Temporal worker. It will use the issuing
+CA to create a new namespace in Temporal Cloud.
 
 ```bash
-kubectl exec -it vault-0 -- /bin/sh
-
-vault secrets enable -path=internal kv-v2
-vault kv put internal/database/config username="db-readonly-username" password="db-secret-password"
-
-vault auth enable kubernetes
-
-vault write auth/kubernetes/config \
-      kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"
-
-vault policy write temporal-infra-worker - <<EOF
-path "internal/data/database/config" {
-   capabilities = ["read"]
-}
-EOF
-
-vault write auth/kubernetes/role/temporal-infra-worker \
-      bound_service_account_names=temporal-infra-worker \
-      bound_service_account_namespaces=default \
-      policies=temporal-infra-worker \
-      ttl=24h
-exit
+terraform apply -auto-approve -var "kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR"
 ```
 
-### Enable and Configure the PKI Secrets Engine
+Whenever you need to destroy the Terraform configuration, you can do so with the following command.
 
 ```bash
-vault secrets disable pki
-vault secrets enable pki
-vault secrets tune -max-lease-ttl=87600h pki
-
-vault write pki/config/urls \
-     issuing_certificates="$VAULT_ADDR/v1/pki/ca" \
-     crl_distribution_points="$VAULT_ADDR/v1/pki/crl"
-
-vault write pki/root/generate/internal \
-    common_name="dahlke" \
-    organization="dahlke" \
-    key_type="rsa" \
-    key_bits=4096 \
-    exclude_cn_from_sans=true
-
-vault write pki/roles/temporal-infra-worker \
-    allowed_domains="dahlke.io" \
-    allow_subdomains=true \ max_ttl="720h" \
-    key_type="rsa" \
-    key_bits=2048 \
-    allow_any_name=true \
-    key_usage="DigitalSignature" \
-    ext_key_usage="ClientAuth" \
-    require_cn=false
-
-vault policy write temporal-infra-worker - <<EOF
-# Allow issuing certificates
-path "pki/issue/temporal-infra-worker" {
-   capabilities = ["create", "read", "update"]
-}
-
-# Allow reading certificate configuration
-path "pki/config/*" {
-   capabilities = ["read"]
-}
-
-# Allow reading role configuration
-path "pki/roles/temporal-infra-worker" {
-   capabilities = ["read"]
-}
-EOF
+terraform destroy -auto-approve -var "kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR"
 ```
 
-### Deploy Temporal Worker
+Once the Terraform configuration is applied, you can extract the certs to files if you'd like to
+inspect them or use them directly.
 
-#### With Vault Agent Injector
+```bash
+terraform output -raw client_pem > client.pem
+terraform output -raw client_key > client.key
+terraform output -raw ca_chain_pem > ca_chain.pem
+```
+
+You can also use `tcld` to easily add and remove the CA cert from the Temporal namespace.
+
+```bash
+tcld namespace accepted-client-ca add \
+  --namespace $TEMPORAL_NAMESPACE \
+  --ca-certificate $(cat ca_chain.pem | base64)
+
+tcld namespace accepted-client-ca remove \
+  --namespace $TEMPORAL_NAMESPACE \
+  --fp $(tcld namespace accepted-client-ca list \
+  --namespace $TEMPORAL_NAMESPACE | jq '.[0].fingerprint')
+```
+
+To see all of your outputs, including the name of the new Temporal namespace, run the following command.
+
+```bash
+terraform output
+```
+
+## Deploy Temporal Worker
+
+In the `kubernetes` directory, there are two different ways to deploy the Temporal worker: with the
+Vault Agent Injector or with the Vault Secrets Operator. You'll need to make some modifications to
+a few files before we can deploy the worker.
+
+In both `kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml` and
+`kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml`, you'll need to update
+the `ConfigMap` named `temporal-infra-worker-config` with the correct values for `TEMPORAL_HOST_URL`,
+`TEMPORAL_NAMESPACE`, `TEMPORAL_TASK_QUEUE`, and `TF_VAR_prefix`.
+
+```bash
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-infra-worker-config
+data:
+  TEMPORAL_HOST_URL: "<your-temporal-host-url>"
+  TEMPORAL_NAMESPACE: "<your-temporal-namespace>"
+  TEMPORAL_TASK_QUEUE: "<your-temporal-task-queue>"
+  TF_VAR_prefix: "<your-terraform-prefix>"
+  ENCRYPT_PAYLOADS: "true"
+```
+
+You'll also need to update the `Secret` named `temporal-secrets` with the correct values for
+`cloud-api-key`.
+
+```bash
+apiVersion: v1
+kind: Secret
+metadata:
+  name: temporal-secrets
+type: Opaque
+data:
+  cloud-api-key: "<your-cloud-api-key>"
+```
+
+### With Vault Agent Injector
 
 Deploy the Temporal worker.
 
@@ -138,9 +147,12 @@ Deploy the Temporal worker.
 kubectl apply -f kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
 ```
 
-#### With Vault Secrets Operator
+### With Vault Secrets Operator
 
 ```bash
-helm install vault-secrets-operator hashicorp/vault-secrets-operator
 kubectl apply -f kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
 ```
+
+## TODO
+
+- Rename the deployments and secrets to match their purpose?
