@@ -41,7 +41,7 @@ metadata:
 spec:
   vaultAuthRef: vault-auth-temporal-infra-worker
   namespace: default
-  mount: pki
+  mount: pki_int
   role: temporal-infra-worker
   destination:
     name: temporal-tls-certs
@@ -59,8 +59,8 @@ metadata:
   name: temporal-infra-worker-config
   namespace: default
 data:
-  TEMPORAL_HOST_URL: "neil-terraform-demo-62640c34.sdvdw.tmprl.cloud:7233"
-  TEMPORAL_NAMESPACE: "neil-terraform-demo-62640c34.sdvdw"
+  TEMPORAL_HOST_URL: "neil-terraform-demo-de39616c.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-terraform-demo-de39616c.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
   ENCRYPT_PAYLOADS: "true"

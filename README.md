@@ -169,12 +169,30 @@ vault write pki/root/rotate/internal \
 
 vault read -field=certificate pki/cert/ca > new_ca.pem
 
+# Generate a new intermediate CA
+vault write -format=json pki_int/intermediate/generate/internal \
+    common_name="New Intermediate CA" ttl="8760h" > pki_intermediate.json
+
+# Extract the CSR from the generated intermediate CA
+csr=$(jq -r '.data.csr' pki_intermediate.json)
+
+# Sign the intermediate CA with the root CA
+vault write -format=json pki/root/sign-intermediate \
+    csr="$csr" \
+    format="pem_bundle" \
+    ttl="8760h" > intermediate.cert.pem
+
+# Set the signed certificate for the intermediate CA
+vault write pki_int/intermediate/set-signed \
+    certificate=@intermediate.cert.pem
+
+vault read -field=certificate pki_int/cert/ca > new_issuing_ca.pem
 ```
 
 Add the new CA cert to the Temporal namespace.
 
 ```bash
-export TEMPORAL_NAMESPACE="<your-temporal-namespace>"
+export TEMPORAL_NAMESPACE="neil-terraform-demo-de39616c.sdvdw"
 
 tcld namespace accepted-client-ca add \
   --namespace $TEMPORAL_NAMESPACE \
