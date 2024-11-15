@@ -153,6 +153,30 @@ kubectl apply -f kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker
 kubectl apply -f kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
 ```
 
-## TODO
+## Rotate the Root CA
 
-- Rename the deployments and secrets to match their purpose?
+Now say you want to rotate the root CA, you can do so with the following command.
+
+TODO: review the Terraform code.
+
+```bash
+vault write pki/root/rotate/internal \
+    common_name="dahlke" \
+    organization="dahlke" \
+    key_type="rsa" \
+    key_bits=4096 \
+    exclude_cn_from_sans=true
+
+vault read -field=certificate pki/cert/ca > new_ca.pem
+
+```
+
+Add the new CA cert to the Temporal namespace.
+
+```bash
+export TEMPORAL_NAMESPACE="<your-temporal-namespace>"
+
+tcld namespace accepted-client-ca add \
+  --namespace $TEMPORAL_NAMESPACE \
+  --ca-certificate $(cat new_issuing_ca.pem | base64)
+```

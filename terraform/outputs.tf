@@ -1,14 +1,17 @@
-output "client_pem" {
-  value = vault_pki_secret_backend_cert.temporal_infra_worker_cert.certificate
+output "intermediate_ca_issuing_certificates" {
+  value = vault_pki_secret_backend_config_urls.pki_int_urls.issuing_certificates
 }
 
-output "client_key" {
-  value = vault_pki_secret_backend_cert.temporal_infra_worker_cert.private_key
-  sensitive = true
+output "intermediate_ca_crl_distribution_points" {
+  value = vault_pki_secret_backend_config_urls.pki_int_urls.crl_distribution_points
 }
 
-output "ca_chain_pem" {
-  value = vault_pki_secret_backend_cert.temporal_infra_worker_cert.issuing_ca
+output "intermediate_ca_role_name" {
+  value = vault_pki_secret_backend_role.temporal_infra_worker_intermediate.name
+}
+
+output "intermediate_ca_cert_common_name" {
+  value = vault_pki_secret_backend_cert.temporal_infra_worker_cert_intermediate.common_name
 }
 
 output "terraform_test_namespace_endpoints" {
