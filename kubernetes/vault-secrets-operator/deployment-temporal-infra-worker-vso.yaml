@@ -48,7 +48,7 @@ spec:
   commonName: worker.dahlke.io
   format: pem
   expiryOffset: 5s
-  ttl: 15s
+  ttl: 60s
   rolloutRestartTargets:
     - kind: Deployment
       name: temporal-infra-worker
@@ -59,8 +59,8 @@ metadata:
   name: temporal-infra-worker-config
   namespace: default
 data:
-  TEMPORAL_HOST_URL: "neil-terraform-demo-de39616c.sdvdw.tmprl.cloud:7233"
-  TEMPORAL_NAMESPACE: "neil-terraform-demo-de39616c.sdvdw"
+  TEMPORAL_HOST_URL: "neil-terraform-demo-73525b85.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-terraform-demo-73525b85.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
   ENCRYPT_PAYLOADS: "true"

@@ -153,11 +153,9 @@ kubectl apply -f kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker
 kubectl apply -f kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
 ```
 
-## Rotate the Root CA
+## [IN DEVELOPMENT] Rotate the Root CA
 
 Now say you want to rotate the root CA, you can do so with the following command.
-
-TODO: review the Terraform code.
 
 ```bash
 vault write pki/root/rotate/internal \
@@ -180,13 +178,19 @@ csr=$(jq -r '.data.csr' pki_intermediate.json)
 vault write -format=json pki/root/sign-intermediate \
     csr="$csr" \
     format="pem_bundle" \
-    ttl="8760h" > intermediate.cert.pem
+    ttl="8760h" > intermediate.cert.json
+
+cat intermediate.cert.json | jq -r '.data.certificate' > intermediate.cert.pem
+cat intermediate.cert.json | jq -r '.data.ca_chain[]' > new_ca_chain.pem
 
 # Set the signed certificate for the intermediate CA
 vault write pki_int/intermediate/set-signed \
     certificate=@intermediate.cert.pem
 
-vault read -field=certificate pki_int/cert/ca > new_issuing_ca.pem
+# issuing_ca=$(vault read -field=certificate pki_int/cert/ca)
+# root_cert=$(vault read -field=certificate pki/cert/ca)
+# echo -e "${issuing_ca}\n${root_cert}" > new_ca_chain.pem
+
 ```
 
 Add the new CA cert to the Temporal namespace.
@@ -196,5 +200,5 @@ export TEMPORAL_NAMESPACE="neil-terraform-demo-de39616c.sdvdw"
 
 tcld namespace accepted-client-ca add \
   --namespace $TEMPORAL_NAMESPACE \
-  --ca-certificate $(cat new_issuing_ca.pem | base64)
+  --ca-certificate $(cat new_ca_chain.pem | base64)
 ```

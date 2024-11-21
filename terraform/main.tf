@@ -204,7 +204,7 @@ resource "random_id" "random_suffix" {
 }
 
 resource "temporalcloud_namespace" "terraform_test" {
-  name               = "${var.prefix}-terraform-demo-${random_id.random_suffix.hex}"
+  name               = "${var.prefix}-vault-cert-rotation-demo-${random_id.random_suffix.hex}"
   regions            = [var.region]
   accepted_client_ca = base64encode(
     "${vault_pki_secret_backend_cert.temporal_infra_worker_cert_intermediate.issuing_ca}\n${vault_pki_secret_backend_root_cert.root_cert.certificate}"
