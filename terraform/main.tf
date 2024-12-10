@@ -40,7 +40,7 @@ resource "vault_pki_secret_backend_root_cert" "root_cert" {
   organization = "dahlke"
   key_type = "rsa"
   key_bits = 4096
-  exclude_cn_from_sans = true
+  # exclude_cn_from_sans = true
 }
 
 resource "vault_pki_secret_backend_role" "temporal_infra_worker_root" {
@@ -55,7 +55,7 @@ resource "vault_pki_secret_backend_role" "temporal_infra_worker_root" {
   allow_any_name = true
   key_usage = ["DigitalSignature"]
   ext_key_usage = ["ClientAuth"]
-  require_cn = false
+  require_cn = true
 }
 
 resource "vault_mount" "kvv1" {

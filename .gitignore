@@ -1,6 +1,7 @@
 *.pem
 *.key
 *.crt
+*.csr
 cert_output.json
 *.tfstate*
 .DS_Store
