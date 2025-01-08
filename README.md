@@ -115,8 +115,8 @@ In the `kubernetes` directory, there are two different ways to deploy the Tempor
 Vault Agent Injector or with the Vault Secrets Operator. You'll need to make some modifications to
 a few files before we can deploy the worker.
 
-In both `kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml` and
-`kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml`, you'll need to update
+In both `kubernetes/certs/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml` and
+`kubernetes/certs/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml`, you'll need to update
 the `ConfigMap` named `temporal-infra-worker-config` with the correct values for `TEMPORAL_HOST_URL`,
 `TEMPORAL_NAMESPACE`, `TEMPORAL_TASK_QUEUE`, and `TF_VAR_prefix`.
 
@@ -138,7 +138,7 @@ data:
 Deploy the Temporal worker.
 
 ```bash
-kubectl apply -f kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
+kubectl apply -f kubernetes/certs/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
 
 ```
 
@@ -154,7 +154,7 @@ watch -n 1 kubectl exec -n default $POD_NAME -- cat /vault/secrets/tls-key.pem
 ### With Vault Secrets Operator
 
 ```bash
-kubectl apply -f kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
+kubectl apply -f kubernetes/certs/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
 ```
 
 Then, to watch the secret be rotated, you can run the following commands.
@@ -201,8 +201,8 @@ There are two primary methods to rotate the root CA and maintain a working fleet
 ### Cleaning up
 
 ```bash
-kubectl delete -f kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
-kubectl delete -f kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
+kubectl delete -f kubernetes/certs/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
+kubectl delete -f kubernetes/certs/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
 
 terraform destroy -auto-approve -var "kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR"
 ```
