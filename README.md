@@ -152,12 +152,33 @@ Deploy the Temporal worker.
 
 ```bash
 kubectl apply -f kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
+
+```
+
+Then, to watch the secret be rotated, you can run the following commands.
+
+```bash
+POD_NAME=$(kubectl get pods -n default -l app=temporal-infra-worker -o jsonpath='{.items[0].metadata.name}')
+
+watch -n 1 kubectl exec -n default $POD_NAME -- cat /vault/secrets/tls-cert.pem
+watch -n 1 kubectl exec -n default $POD_NAME -- cat /vault/secrets/tls-key.pem
 ```
 
 ### With Vault Secrets Operator
 
 ```bash
 kubectl apply -f kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
+```
+
+Then, to watch the secret be rotated, you can run the following commands.
+
+```bash
+kubectl get secret temporal-tls-certs -o yaml
+kubectl get secret temporal-tls-certs -o jsonpath='{.data.ca_chain}' | base64 -d
+kubectl get secret temporal-tls-certs -o jsonpath='{.data.certificate}' | base64 -d
+
+watch -n 1 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.ca_chain}' | base64 -d"
+watch -n 1 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.certificate}' | base64 --decode"
 ```
 
 ## Rotating the Root CA
@@ -188,3 +209,13 @@ There are two primary methods to rotate the root CA and maintain a working fleet
 4. **Update the Workers**: Update the workers to use the new intermediate CA. This ensures that they can be verified by clients that trust either root CA.
 
 5. **Update the Root CA**: Eventually, transition to using only the new root CA, phasing out the old root CA.
+
+
+### Cleaning up
+
+```bash
+kubectl delete -f kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
+kubectl delete -f kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
+
+terraform destroy -auto-approve -var "kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR"
+```
