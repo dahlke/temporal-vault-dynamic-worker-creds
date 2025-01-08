@@ -133,19 +133,6 @@ data:
   ENCRYPT_PAYLOADS: "true"
 ```
 
-You'll also need to update the `Secret` named `temporal-secrets` with the correct values for
-`cloud-api-key`.
-
-```bash
-apiVersion: v1
-kind: Secret
-metadata:
-  name: temporal-secrets
-type: Opaque
-data:
-  cloud-api-key: "<your-cloud-api-key>"
-```
-
 ### With Vault Agent Injector
 
 Deploy the Temporal worker.

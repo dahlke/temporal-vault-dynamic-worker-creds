@@ -81,11 +81,6 @@ spec:
                   value: /vault/secrets/tls-cert.pem
                 - name: TEMPORAL_MTLS_TLS_KEY
                   value: /vault/secrets/tls-key.pem
-                - name: TEMPORAL_API_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: temporal-secrets
-                      key: cloud-api-key
               resources:
                 limits:
                   cpu: "0.5"
