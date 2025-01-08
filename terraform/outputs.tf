@@ -14,6 +14,19 @@ output "intermediate_ca_cert_common_name" {
   value = vault_pki_secret_backend_cert.temporal_infra_worker_cert_intermediate.common_name
 }
 
+output "intermediate_client_pem" {
+  value = vault_pki_secret_backend_cert.temporal_infra_worker_cert_intermediate.certificate
+}
+
+output "intermediate_client_key" {
+  value     = vault_pki_secret_backend_cert.temporal_infra_worker_cert_intermediate.private_key
+  sensitive = true
+}
+
+output "intermediate_ca_chain_pem" {
+  value = vault_pki_secret_backend_cert.temporal_infra_worker_cert_intermediate.ca_chain
+}
+
 output "terraform_test_namespace_endpoints" {
   value = temporalcloud_namespace.terraform_test.endpoints
 }

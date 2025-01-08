@@ -78,9 +78,16 @@ Once the Terraform configuration is applied, you can extract the certs to files 
 inspect them or use them directly.
 
 ```bash
-terraform output -raw client_pem > client.pem
-terraform output -raw client_key > client.key
-terraform output -raw ca_chain_pem > ca_chain.pem
+# TODO: remove these when done
+# terraform output -raw client_pem > client.pem
+# terraform output -raw client_key > client.key
+# terraform output -raw ca_chain_pem > ca_chain.pem
+rm *.pem *.key
+terraform output -raw intermediate_client_pem > client.pem
+terraform output -raw intermediate_client_key > client.key
+terraform output -raw intermediate_ca_chain_pem > ca_chain.pem
+
+export TEMPORAL_NAMESPACE=$(terraform output -raw terraform_test_namespace_id)
 ```
 
 You can also use `tcld` to easily add and remove the CA cert from the Temporal namespace.
@@ -153,52 +160,31 @@ kubectl apply -f kubernetes/vault-agent-sidecar/deployment-temporal-infra-worker
 kubectl apply -f kubernetes/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
 ```
 
-## [IN DEVELOPMENT] Rotate the Root CA
+## Rotating the Root CA
 
-Now say you want to rotate the root CA, you can do so with the following command.
+_NOTE: The code for this section is out of the scope of this Vault / Kubernetes Demo for now,
+(as of January 2025), but at a high level:_
 
-```bash
-vault write pki/root/rotate/internal \
-    common_name="dahlke" \
-    organization="dahlke" \
-    key_type="rsa" \
-    key_bits=4096 \
-    exclude_cn_from_sans=true
+There are two primary methods to rotate the root CA and maintain a working fleet of workers.
 
-vault read -field=certificate pki/cert/ca > new_ca.pem
+## Option 1: Rotate the Root CA
 
-# Generate a new intermediate CA
-vault write -format=json pki_int/intermediate/generate/internal \
-    common_name="New Intermediate CA" ttl="8760h" > pki_intermediate.json
+1. **Rotate the Root CA**: This is the most secure method, but it requires a lot of manual work.
+   You'll need to generate a new root CA, update the intermediate CA to use the new root CA, and
+   then update the workers to use the new root CA.
 
-# Extract the CSR from the generated intermediate CA
-csr=$(jq -r '.data.csr' pki_intermediate.json)
+2. **Rotate the Intermediate CA**: This is a more manual process, but it's easier to implement.
+   You'll need to generate a new intermediate CA, update the workers to use the new intermediate
+   CA, and then update the root CA to use the new intermediate CA.
 
-# Sign the intermediate CA with the root CA
-vault write -format=json pki/root/sign-intermediate \
-    csr="$csr" \
-    format="pem_bundle" \
-    ttl="8760h" > intermediate.cert.json
+## Option 2: Cross-sign the Intermediate CA
 
-cat intermediate.cert.json | jq -r '.data.certificate' > intermediate.cert.pem
-cat intermediate.cert.json | jq -r '.data.ca_chain[]' > new_ca_chain.pem
+1. **Set Up a New Root CA**: Generate a new root CA that will be used to cross-sign the new intermediate CA.
 
-# Set the signed certificate for the intermediate CA
-vault write pki_int/intermediate/set-signed \
-    certificate=@intermediate.cert.pem
+2. **Generate a New Intermediate CA**: Create a new intermediate CA that will be cross-signed by both the old and new root CAs.
 
-# issuing_ca=$(vault read -field=certificate pki_int/cert/ca)
-# root_cert=$(vault read -field=certificate pki/cert/ca)
-# echo -e "${issuing_ca}\n${root_cert}" > new_ca_chain.pem
+3. **Cross-sign the Intermediate CA**: The new intermediate CA is signed by both the old root CA and the new root CA. This allows the intermediate CA to be trusted by clients that trust either root CA.
 
-```
+4. **Update the Workers**: Update the workers to use the new intermediate CA. This ensures that they can be verified by clients that trust either root CA.
 
-Add the new CA cert to the Temporal namespace.
-
-```bash
-export TEMPORAL_NAMESPACE="neil-terraform-demo-de39616c.sdvdw"
-
-tcld namespace accepted-client-ca add \
-  --namespace $TEMPORAL_NAMESPACE \
-  --ca-certificate $(cat new_ca_chain.pem | base64)
-```
+5. **Update the Root CA**: Eventually, transition to using only the new root CA, phasing out the old root CA.

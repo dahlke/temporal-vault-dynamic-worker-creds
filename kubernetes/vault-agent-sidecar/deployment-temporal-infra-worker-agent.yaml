@@ -11,8 +11,8 @@ metadata:
   name: temporal-infra-worker-config
   namespace: default
 data:
-  TEMPORAL_HOST_URL: "neil-terraform-demo-73525b85.sdvdw.tmprl.cloud:7233"
-  TEMPORAL_NAMESPACE: "neil-terraform-demo-73525b85.sdvdw"
+  TEMPORAL_HOST_URL: "neil-vault-cert-rotation-demo-7ee7106c.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-7ee7106c.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
   ENCRYPT_PAYLOADS: "true"
@@ -81,7 +81,7 @@ spec:
                   value: /vault/secrets/tls-cert.pem
                 - name: TEMPORAL_MTLS_TLS_KEY
                   value: /vault/secrets/tls-key.pem
-                - name: TEMPORAL_CLOUD_API_KEY
+                - name: TEMPORAL_API_KEY
                   valueFrom:
                     secretKeyRef:
                       name: temporal-secrets
