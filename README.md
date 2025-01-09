@@ -1,4 +1,4 @@
-# Rotating Temporal Workers Certificates in Kubernetes with Vault
+# Dynamic Temporal Worker Credentials from Vault (Certs & API Keys)
 
 ## Requirements
 
@@ -111,9 +111,14 @@ terraform output
 
 ## Deploy Temporal Worker
 
-In the `kubernetes` directory, there are two different ways to deploy the Temporal worker: with the
-Vault Agent Injector or with the Vault Secrets Operator. You'll need to make some modifications to
-a few files before we can deploy the worker.
+In the `kubernetes` directory, there are two different ways to deploy the Temporal worker allowing
+consumption of dynamic credentials from Vault:
+
+- with the [Vault Agent Injector](https://www.vaultproject.io/docs/platform/k8s/injector)
+- with the [Vault Secrets Operator](https://github.com/hashicorp/vault-secrets-operator)
+
+You can use the links above to determine which method you'd like to use. If you choose.  For both,
+you'll need to make some modifications to a few files before we can deploy the worker.
 
 In both `kubernetes/certs/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml` and
 `kubernetes/certs/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml`, you'll need to update
