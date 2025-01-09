@@ -168,36 +168,6 @@ watch -n 1 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.ca_chain}'
 watch -n 1 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.certificate}' | base64 --decode"
 ```
 
-## Rotating the Root CA
-
-_NOTE: The code for this section is out of the scope of this Vault / Kubernetes Demo for now,
-(as of January 2025), but at a high level:_
-
-There are two primary methods to rotate the root CA and maintain a working fleet of workers.
-
-## Option 1: Rotate the Root CA
-
-1. **Rotate the Root CA**: This is the most secure method, but it requires a lot of manual work.
-   You'll need to generate a new root CA, update the intermediate CA to use the new root CA, and
-   then update the workers to use the new root CA.
-
-2. **Rotate the Intermediate CA**: This is a more manual process, but it's easier to implement.
-   You'll need to generate a new intermediate CA, update the workers to use the new intermediate
-   CA, and then update the root CA to use the new intermediate CA.
-
-## Option 2: Cross-sign the Intermediate CA
-
-1. **Set Up a New Root CA**: Generate a new root CA that will be used to cross-sign the new intermediate CA.
-
-2. **Generate a New Intermediate CA**: Create a new intermediate CA that will be cross-signed by both the old and new root CAs.
-
-3. **Cross-sign the Intermediate CA**: The new intermediate CA is signed by both the old root CA and the new root CA. This allows the intermediate CA to be trusted by clients that trust either root CA.
-
-4. **Update the Workers**: Update the workers to use the new intermediate CA. This ensures that they can be verified by clients that trust either root CA.
-
-5. **Update the Root CA**: Eventually, transition to using only the new root CA, phasing out the old root CA.
-
-
 ### Cleaning up
 
 ```bash
