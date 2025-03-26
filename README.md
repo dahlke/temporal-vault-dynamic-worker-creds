@@ -1,5 +1,7 @@
 # Dynamic Temporal Worker Credentials from Vault (Certs & API Keys)
 
+⚠️ Not for Production Use ⚠️
+
 ## Requirements
 
 - `minikube`
@@ -86,6 +88,7 @@ rm *.pem *.key
 terraform output -raw intermediate_client_pem > client.pem
 terraform output -raw intermediate_client_key > client.key
 terraform output -raw intermediate_ca_chain_pem > ca_chain.pem
+terraform output -raw full_ca_chain > full_ca_chain.pem
 
 export TEMPORAL_NAMESPACE=$(terraform output -raw terraform_test_namespace_id)
 ```
@@ -142,7 +145,6 @@ data:
 
 Deploy the Temporal worker.
 
-```bash
 kubectl apply -f kubernetes/certs/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
 
 ```
