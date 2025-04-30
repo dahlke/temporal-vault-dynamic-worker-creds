@@ -9,9 +9,9 @@
 - `vault`
 - `kubectl`
 
-This is a sample project to rotate the certificates for a Temporal worker running in Kubernetes,
-using Vault's PKI Secrets Engine to generate certs and deliver them to the worker pods with either
-the Vault Agent Injector or the Vault Secrets Operator.
+This is a sample project to rotate the certificates or API keys and inject them into a Temporal
+worker running in Kubernetes, using Vault's PKI secrets engine or Vault's KV secret engine and the
+[Vault Secrets Operator](https://github.com/hashicorp/vault-secrets-operator).
 
 ## Vault and Minikube Startup
 
@@ -24,8 +24,7 @@ minikube start --driver=docker --cpus=2 --memory=4096
 ### Run Vault in dev mode in Kubernetes
 
 Add the HashiCorp Helm repository, create a namespace for Vault, and install Vault in Minikube in
-Dev mode. We'll also install the [Vault Secrets Operator](https://github.com/hashicorp/vault-secrets-operator)
-at this stage.
+Dev mode. We'll also install the Vault Secrets Operator at this stage.
 
 ```bash
 helm repo add hashicorp https://helm.releases.hashicorp.com
@@ -62,9 +61,9 @@ export VAULT_ADDR='http://127.0.0.1:8200'
 export VAULT_TOKEN='root'
 ```
 
-Then apply the Terraform configuration. The Terraform configuration will mount the PKI engine in Vault,
-create a root CA, and create a role and certificate for the Temporal worker. It will use the issuing
-CA to create a new namespace in Temporal Cloud.
+There are two Terraform configurations, one for setting up Vault and Temporal Cloud for mTLS
+authentication, and another with API key authentication. Choose which option you want by `cd`ing
+int the appropriate `./terraform` directory.
 
 ```bash
 terraform apply -auto-approve -var "kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR"
@@ -76,14 +75,10 @@ Whenever you need to destroy the Terraform configuration, you can do so with the
 terraform destroy -auto-approve -var "kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR"
 ```
 
-Once the Terraform configuration is applied, you can extract the certs to files if you'd like to
-inspect them or use them directly.
+If you are using the mTLS approach, once the Terraform configuration is applied, you can extract
+the certs to files if you'd like to inspect them or use them directly.
 
 ```bash
-# TODO: remove these when done
-# terraform output -raw client_pem > client.pem
-# terraform output -raw client_key > client.key
-# terraform output -raw ca_chain_pem > ca_chain.pem
 rm *.pem *.key
 terraform output -raw intermediate_client_pem > client.pem
 terraform output -raw intermediate_client_key > client.key
@@ -115,18 +110,11 @@ terraform output
 ## Deploy Temporal Worker
 
 In the `kubernetes` directory, there are two different ways to deploy the Temporal worker allowing
-consumption of dynamic credentials from Vault:
+consumption of dynamic credentials from Vault with the [Vault Secrets Operator](https://github.com/hashicorp/vault-secrets-operator)
 
-- with the [Vault Agent Injector](https://www.vaultproject.io/docs/platform/k8s/injector)
-- with the [Vault Secrets Operator](https://github.com/hashicorp/vault-secrets-operator)
-
-You can use the links above to determine which method you'd like to use. If you choose.  For both,
-you'll need to make some modifications to a few files before we can deploy the worker.
-
-In both `kubernetes/certs/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml` and
-`kubernetes/certs/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml`, you'll need to update
-the `ConfigMap` named `temporal-infra-worker-config` with the correct values for `TEMPORAL_HOST_URL`,
-`TEMPORAL_NAMESPACE`, `TEMPORAL_TASK_QUEUE`, and `TF_VAR_prefix`.
+You'll need to update the `ConfigMap` named `temporal-infra-worker-config` with the correct values
+for `TEMPORAL_HOST_URL`, `TEMPORAL_NAMESPACE`, `TEMPORAL_TASK_QUEUE`, and `TF_VAR_prefix` in
+whichever Kubernetes manifest file you choose from the `./kubernetes` directory.
 
 ```bash
 apiVersion: v1
@@ -160,6 +148,8 @@ watch -n 1 kubectl exec -n default $POD_NAME -- cat /vault/secrets/tls-key.pem
 
 ### With Vault Secrets Operator
 
+#### Certificates
+
 ```bash
 kubectl apply -f kubernetes/certs/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
 ```
@@ -175,11 +165,22 @@ watch -n 1 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.ca_chain}'
 watch -n 1 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.certificate}' | base64 --decode"
 ```
 
+#### API Keys
+
+```bash
+kubectl create secret generic temporal-api-key \
+  --from-literal=TEMPORAL_API_KEY=$TEMPORAL_CLOUD_API_KEY
+```
+
+```bash
+kubectl apply -f kubernetes/api_keys/deployment-temporal-infra-worker-vso.yaml
+```
+
 ### Cleaning up
 
 ```bash
-kubectl delete -f kubernetes/certs/vault-agent-sidecar/deployment-temporal-infra-worker-agent.yaml
-kubectl delete -f kubernetes/certs/vault-secrets-operator/deployment-temporal-infra-worker-vso.yaml
+kubectl delete -f kubernetes/certs/deployment-temporal-infra-worker-vso.yaml
+kubectl delete -f kubernetes/api_keys/deployment-temporal-infra-worker-vso.yaml
 
 terraform destroy -auto-approve -var "kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR"
 ```

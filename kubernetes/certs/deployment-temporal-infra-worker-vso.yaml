@@ -5,14 +5,62 @@ metadata:
   name: temporal-infra-worker
   namespace: default
 ---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: vault-connection
+  namespace: default
+spec:
+  address: http://vault:8200
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: vault-auth-temporal-infra-worker
+  namespace: default
+spec:
+  vaultConnectionRef: vault-connection
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: temporal-infra-worker
+    serviceAccount: temporal-infra-worker
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: temporal-tls-certs
+  namespace: default
+type: Opaque
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultPKISecret
+metadata:
+  namespace: default
+  name: vaultpkisecret-temporal-infra-worker
+spec:
+  vaultAuthRef: vault-auth-temporal-infra-worker
+  namespace: default
+  mount: pki_int
+  role: temporal-infra-worker
+  destination:
+    name: temporal-tls-certs
+  commonName: worker.dahlke.io
+  format: pem
+  expiryOffset: 5s
+  ttl: 60s
+  rolloutRestartTargets:
+    - kind: Deployment
+      name: temporal-infra-worker
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: temporal-infra-worker-config
   namespace: default
 data:
-  TEMPORAL_HOST_URL: "neil-vault-cert-rotation-demo-7ee7106c.sdvdw.tmprl.cloud:7233"
-  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-7ee7106c.sdvdw"
+  TEMPORAL_HOST_URL: "neil-vault-cert-rotation-demo-f616a12e.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-f616a12e.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
   ENCRYPT_PAYLOADS: "true"
@@ -31,19 +79,6 @@ spec:
    replicas: 1
    template:
       metadata:
-         annotations:
-            vault.hashicorp.com/agent-inject: 'true'
-            vault.hashicorp.com/agent-inject-status: 'update'
-            vault.hashicorp.com/role: 'temporal-infra-worker'
-            vault.hashicorp.com/agent-inject-template-tls-cert.pem: |
-               {{- with secret "pki_int/issue/temporal-infra-worker" "common_name=worker.dahlke.io" "ttl=60s" -}}
-               {{ .Data.certificate }}
-               {{- end }}
-            vault.hashicorp.com/agent-inject-template-tls-key.pem: |
-               {{- with secret "pki_int/issue/temporal-infra-worker" "common_name=worker.dahlke.io" "ttl=60s" -}}
-               {{ .Data.private_key }}
-               {{- end }}
-            vault.hashicorp.com/namespace: 'vault'
          labels:
             app: temporal-infra-worker
       spec:
@@ -78,9 +113,14 @@ spec:
                       name: temporal-infra-worker-config
                       key: ENCRYPT_PAYLOADS
                 - name: TEMPORAL_MTLS_TLS_CERT
-                  value: /vault/secrets/tls-cert.pem
+                  value: /vault/secrets/certificate
                 - name: TEMPORAL_MTLS_TLS_KEY
-                  value: /vault/secrets/tls-key.pem
+                  value: /vault/secrets/private_key
+                - name: TEMPORAL_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: temporal-api-key
+                      key: TEMPORAL_API_KEY
               resources:
                 limits:
                   cpu: "0.5"
@@ -88,3 +128,16 @@ spec:
                 requests:
                   cpu: "0.2"
                   memory: "256Mi"
+              volumeMounts:
+                - name: tls-certs
+                  mountPath: /vault/secrets
+                  readOnly: true
+         volumes:
+            - name: tls-certs
+              secret:
+                secretName: temporal-tls-certs
+                items:
+                  - key: certificate
+                    path: certificate
+                  - key: private_key
+                    path: private_key

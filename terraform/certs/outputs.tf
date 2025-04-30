@@ -34,3 +34,11 @@ output "terraform_test_namespace_endpoints" {
 output "terraform_test_namespace_id" {
   value = temporalcloud_namespace.terraform_test.id
 }
+
+output "full_ca_chain" {
+  value = <<EOT
+${vault_pki_secret_backend_intermediate_set_signed.set_signed_intermediate.certificate}
+${vault_pki_secret_backend_root_cert.root_cert.certificate}
+EOT
+  sensitive = true
+}

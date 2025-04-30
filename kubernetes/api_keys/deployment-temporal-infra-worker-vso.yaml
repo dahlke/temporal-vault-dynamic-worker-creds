@@ -26,29 +26,20 @@ spec:
     role: temporal-infra-worker
     serviceAccount: temporal-infra-worker
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: temporal-tls-certs
-  namespace: default
-type: Opaque
----
 apiVersion: secrets.hashicorp.com/v1beta1
-kind: VaultPKISecret
+kind: VaultStaticSecret
 metadata:
+  name: temporal-cloud-secret
   namespace: default
-  name: vaultpkisecret-temporal-infra-worker
 spec:
   vaultAuthRef: vault-auth-temporal-infra-worker
-  namespace: default
-  mount: pki_int
-  role: temporal-infra-worker
+  mount: secret
+  type: kv-v1
+  path: temporal-cloud
   destination:
-    name: temporal-tls-certs
-  commonName: worker.dahlke.io
-  format: pem
-  expiryOffset: 5s
-  ttl: 60s
+    name: temporal-cloud-creds
+    create: true
+  refreshAfter: "1h"
   rolloutRestartTargets:
     - kind: Deployment
       name: temporal-infra-worker
@@ -59,8 +50,8 @@ metadata:
   name: temporal-infra-worker-config
   namespace: default
 data:
-  TEMPORAL_HOST_URL: "neil-vault-cert-rotation-demo-7ee7106c.sdvdw.tmprl.cloud:7233"
-  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-7ee7106c.sdvdw"
+  TEMPORAL_HOST_URL: "us-west-2.aws.api.temporal.io:7233"
+  TEMPORAL_NAMESPACE: "neil-vault-api-keys-c9f141c8.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
   ENCRYPT_PAYLOADS: "true"
@@ -112,10 +103,11 @@ spec:
                     configMapKeyRef:
                       name: temporal-infra-worker-config
                       key: ENCRYPT_PAYLOADS
-                - name: TEMPORAL_MTLS_TLS_CERT
-                  value: /vault/secrets/certificate
-                - name: TEMPORAL_MTLS_TLS_KEY
-                  value: /vault/secrets/private_key
+                - name: TEMPORAL_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: temporal-api-key
+                      key: TEMPORAL_API_KEY
               resources:
                 limits:
                   cpu: "0.5"
@@ -123,16 +115,3 @@ spec:
                 requests:
                   cpu: "0.2"
                   memory: "256Mi"
-              volumeMounts:
-                - name: tls-certs
-                  mountPath: /vault/secrets
-                  readOnly: true
-         volumes:
-            - name: tls-certs
-              secret:
-                secretName: temporal-tls-certs
-                items:
-                  - key: certificate
-                    path: certificate
-                  - key: private_key
-                    path: private_key
