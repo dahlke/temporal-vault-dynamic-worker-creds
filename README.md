@@ -4,6 +4,8 @@
 
 This project demonstrates two approaches for securely managing Temporal Cloud authentication credentials in Kubernetes using [HashiCorp Vault](https://developer.hashicorp.com/vault) and the [Vault Secrets Operator](https://github.com/hashicorp/vault-secrets-operator).
 
+> **Note**: This project is pinned to using a specific container from the [temporal-infra-provisioning-demo](https://github.com/dahlke/temporal-infra-provisioning-demo) project for simplicity, which is why the `TF_VAR_prefix` environment variable is required in the deployment configuration.
+
 ## Prerequisites
 
 - `minikube`
