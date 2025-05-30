@@ -8,7 +8,7 @@ export TEMPORAL_CERT_PATH=$(temporal env get --env ${TEMPORAL_ENV} --key tls-cer
 export TEMPORAL_KEY_PATH=$(temporal env get --env ${TEMPORAL_ENV} --key tls-key-path -o json | jq -r '.[].value')
 
 # Used for the Terraform run
-export TEMPORAL_CLOUD_API_KEY=$(temporal env get --env ${TEMPORAL_ENV} --key api-key -o json | jq -r '.[].value')
+export TEMPORAL_API_KEY=$(temporal env get --env ${TEMPORAL_ENV} --key api-key -o json | jq -r '.[].value')
 
 # Optional
 export TEMPORAL_ADDRESS="host.docker.internal:7233" # For Docker workers

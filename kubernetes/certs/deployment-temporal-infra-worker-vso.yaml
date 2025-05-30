@@ -59,7 +59,7 @@ metadata:
   name: temporal-infra-worker-config
   namespace: default
 data:
-  TEMPORAL_HOST_URL: "neil-vault-cert-rotation-demo-f616a12e.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_ADDRESS: "neil-vault-cert-rotation-demo-f616a12e.sdvdw.tmprl.cloud:7233"
   TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-f616a12e.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
@@ -87,11 +87,11 @@ spec:
             - name: temporal-infra-worker
               image: eklhad/temporal-infra-worker:latest
               env:
-                - name: TEMPORAL_HOST_URL
+                - name: TEMPORAL_ADDRESS
                   valueFrom:
                     configMapKeyRef:
                       name: temporal-infra-worker-config
-                      key: TEMPORAL_HOST_URL
+                      key: TEMPORAL_ADDRESS
                 - name: TEMPORAL_NAMESPACE
                   valueFrom:
                     configMapKeyRef:

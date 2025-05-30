@@ -113,7 +113,7 @@ In the `kubernetes` directory, there are two different ways to deploy the Tempor
 consumption of dynamic credentials from Vault with the [Vault Secrets Operator](https://github.com/hashicorp/vault-secrets-operator)
 
 You'll need to update the `ConfigMap` named `temporal-infra-worker-config` with the correct values
-for `TEMPORAL_HOST_URL`, `TEMPORAL_NAMESPACE`, `TEMPORAL_TASK_QUEUE`, and `TF_VAR_prefix` in
+for `TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE`, `TEMPORAL_TASK_QUEUE`, and `TF_VAR_prefix` in
 whichever Kubernetes manifest file you choose from the `./kubernetes` directory.
 
 ```bash
@@ -122,7 +122,7 @@ kind: ConfigMap
 metadata:
   name: temporal-infra-worker-config
 data:
-  TEMPORAL_HOST_URL: "<your-temporal-host-url>"
+  TEMPORAL_ADDRESS: "<your-temporal-host-url>"
   TEMPORAL_NAMESPACE: "<your-temporal-namespace>"
   TEMPORAL_TASK_QUEUE: "<your-temporal-task-queue>"
   TF_VAR_prefix: "<your-terraform-prefix>"
@@ -165,22 +165,39 @@ watch -n 1 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.ca_chain}'
 watch -n 1 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.certificate}' | base64 --decode"
 ```
 
-#### API Keys
+To tear down the deployment.
 
 ```bash
-kubectl create secret generic temporal-api-key \
-  --from-literal=TEMPORAL_API_KEY=$TEMPORAL_CLOUD_API_KEY
+kubectl delete -f kubernetes/certs/deployment-temporal-infra-worker-vso.yaml
+```
+
+#### API Keys
+
+Place the API key into Vault.
+
+```bash
+vault kv put secret/temporal-cloud TEMPORAL_API_KEY=$TEMPORAL_API_KEY
 ```
 
 ```bash
 kubectl apply -f kubernetes/api_keys/deployment-temporal-infra-worker-vso.yaml
 ```
 
+To tear down the deployment.
+
+```bash
+kubectl delete -f kubernetes/api_keys/deployment-temporal-infra-worker-vso.yaml
+```
+
 ### Cleaning up
 
 ```bash
-kubectl delete -f kubernetes/certs/deployment-temporal-infra-worker-vso.yaml
-kubectl delete -f kubernetes/api_keys/deployment-temporal-infra-worker-vso.yaml
-
 terraform destroy -auto-approve -var "kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR"
 ```
+
+# TODO
+
+- don't use the default namespace
+- clean up this README, clearer instructions, record a video.
+- does the static need a refresh?
+- change the roles / policies to be specific to the way they are doing auth.

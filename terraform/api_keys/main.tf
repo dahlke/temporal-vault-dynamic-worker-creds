@@ -47,11 +47,7 @@ resource "vault_policy" "temporal_infra_worker" {
 
   policy = <<EOF
 # Allow reading from the default KV store
-path "secret/data/*" {
-   capabilities = ["read"]
-}
-
-path "secret/metadata/*" {
+path "secret/*" {
    capabilities = ["read"]
 }
 EOF
@@ -64,7 +60,6 @@ resource "random_id" "random_suffix" {
 resource "temporalcloud_namespace" "terraform_test" {
   name               = "${var.prefix}-vault-api-keys-${random_id.random_suffix.hex}"
   regions            = [var.region]
-  # TODO: make this a variable
   api_key_auth       = true
   retention_days     = 1
 }

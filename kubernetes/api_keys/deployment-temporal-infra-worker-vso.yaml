@@ -26,20 +26,26 @@ spec:
     role: temporal-infra-worker
     serviceAccount: temporal-infra-worker
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: temporal-api-key
+  namespace: default
+type: Opaque
+---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
-  name: temporal-cloud-secret
+  name: temporal-api-key
   namespace: default
 spec:
   vaultAuthRef: vault-auth-temporal-infra-worker
   mount: secret
-  type: kv-v1
+  type: kv-v2
   path: temporal-cloud
   destination:
-    name: temporal-cloud-creds
-    create: true
-  refreshAfter: "1h"
+    name: temporal-api-key
+  refreshAfter: "30s"
   rolloutRestartTargets:
     - kind: Deployment
       name: temporal-infra-worker
@@ -50,7 +56,7 @@ metadata:
   name: temporal-infra-worker-config
   namespace: default
 data:
-  TEMPORAL_HOST_URL: "us-west-2.aws.api.temporal.io:7233"
+  TEMPORAL_ADDRESS: "us-west-2.aws.api.temporal.io:7233"
   TEMPORAL_NAMESPACE: "neil-vault-api-keys-c9f141c8.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
@@ -78,11 +84,11 @@ spec:
             - name: temporal-infra-worker
               image: eklhad/temporal-infra-worker:latest
               env:
-                - name: TEMPORAL_HOST_URL
+                - name: TEMPORAL_ADDRESS
                   valueFrom:
                     configMapKeyRef:
                       name: temporal-infra-worker-config
-                      key: TEMPORAL_HOST_URL
+                      key: TEMPORAL_ADDRESS
                 - name: TEMPORAL_NAMESPACE
                   valueFrom:
                     configMapKeyRef:
