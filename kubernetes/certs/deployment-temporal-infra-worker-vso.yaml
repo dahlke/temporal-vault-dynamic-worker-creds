@@ -1,5 +1,10 @@
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: temporal-workers
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: temporal-infra-worker
@@ -59,8 +64,8 @@ metadata:
   name: temporal-infra-worker-config
   namespace: temporal-workers
 data:
-  TEMPORAL_ADDRESS: "neil-vault-cert-rotation-demo-f616a12e.sdvdw.tmprl.cloud:7233"
-  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-f616a12e.sdvdw"
+  TEMPORAL_ADDRESS: "neil-vault-cert-rotation-demo-e629ea83.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-e629ea83.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
   ENCRYPT_PAYLOADS: "true"
@@ -112,15 +117,10 @@ spec:
                     configMapKeyRef:
                       name: temporal-infra-worker-config
                       key: ENCRYPT_PAYLOADS
-                - name: TEMPORAL_MTLS_TLS_CERT
+                - name: TEMPORAL_TLS_CERT
                   value: /vault/secrets/certificate
-                - name: TEMPORAL_MTLS_TLS_KEY
+                - name: TEMPORAL_TLS_KEY
                   value: /vault/secrets/private_key
-                - name: TEMPORAL_API_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: temporal-api-key
-                      key: TEMPORAL_API_KEY
               resources:
                 limits:
                   cpu: "0.5"

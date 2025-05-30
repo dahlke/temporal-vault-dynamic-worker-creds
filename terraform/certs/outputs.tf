@@ -1,3 +1,11 @@
+output "terraform_test_namespace_grpc_endpoint" {
+  value = temporalcloud_namespace.terraform_test.endpoints.mtls_grpc_address
+}
+
+output "terraform_test_namespace_id" {
+  value = temporalcloud_namespace.terraform_test.id
+}
+
 output "intermediate_ca_issuing_certificates" {
   value = vault_pki_secret_backend_config_urls.pki_int_urls.issuing_certificates
 }
@@ -27,14 +35,6 @@ output "intermediate_ca_chain_pem" {
   value = vault_pki_secret_backend_cert.temporal_infra_worker_cert_intermediate.ca_chain
 }
 
-output "terraform_test_namespace_endpoints" {
-  value = temporalcloud_namespace.terraform_test.endpoints
-}
-
-output "terraform_test_namespace_id" {
-  value = temporalcloud_namespace.terraform_test.id
-}
-
 output "full_ca_chain" {
   value = <<EOT
 ${vault_pki_secret_backend_intermediate_set_signed.set_signed_intermediate.certificate}
@@ -42,3 +42,4 @@ ${vault_pki_secret_backend_root_cert.root_cert.certificate}
 EOT
   sensitive = true
 }
+
