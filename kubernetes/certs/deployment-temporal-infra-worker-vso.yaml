@@ -64,8 +64,8 @@ metadata:
   name: temporal-infra-worker-config
   namespace: temporal-workers
 data:
-  TEMPORAL_ADDRESS: "neil-vault-cert-rotation-demo-e629ea83.sdvdw.tmprl.cloud:7233"
-  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-e629ea83.sdvdw"
+  TEMPORAL_ADDRESS: "neil-vault-cert-rotation-demo-ecd2d370.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-ecd2d370.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
   ENCRYPT_PAYLOADS: "true"

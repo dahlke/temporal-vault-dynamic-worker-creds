@@ -51,7 +51,8 @@ spec:
   path: temporal-cloud
   destination:
     name: temporal-api-key
-  refreshAfter: "30s"
+  syncConfig:
+    instantUpdates: true
   rolloutRestartTargets:
     - kind: Deployment
       name: temporal-infra-worker

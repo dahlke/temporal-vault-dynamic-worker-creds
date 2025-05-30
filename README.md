@@ -188,10 +188,10 @@ Check VSO logs for any issues:
 
 ```bash
 # Check VSO controller logs
-kubectl logs -n vault-secrets-operator-system -l app.kubernetes.io/name=vault-secrets-operator
+kubectl logs -n vault -l app.kubernetes.io/name=vault-secrets-operator
 
 # Watch VSO logs in real-time
-kubectl logs -n vault-secrets-operator-system -l app.kubernetes.io/name=vault-secrets-operator -f
+kubectl logs -n vault -l app.kubernetes.io/name=vault-secrets-operator -f
 ```
 
 ## Key Rotation
@@ -205,6 +205,7 @@ Certificates rotate automatically based on the TTL configured in the Vault PKI e
 When your API key needs to be rotated:
 
 1. Update the key in Vault:
+
    ```bash
    vault kv put secret/temporal-cloud TEMPORAL_API_KEY="your-new-api-key"
    ```
