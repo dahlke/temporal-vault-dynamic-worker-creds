@@ -47,7 +47,7 @@ metadata:
 spec:
   vaultAuthRef: vault-auth-temporal-infra-worker
   mount: secret
-  type: kv-v1
+  type: kv-v2
   path: temporal-cloud
   destination:
     name: temporal-api-key
