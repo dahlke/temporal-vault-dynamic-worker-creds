@@ -37,7 +37,7 @@ resource "vault_kubernetes_auth_backend_role" "temporal_infra_worker" {
   role_name = "temporal-infra-worker"
   backend = vault_auth_backend.kubernetes.path
   bound_service_account_names = ["temporal-infra-worker"]
-  bound_service_account_namespaces = ["default", "vault"]
+  bound_service_account_namespaces = ["temporal-workers", "vault"]
   token_policies = [vault_policy.temporal_infra_worker.name]
   token_ttl = 24 * 60 * 60
 }

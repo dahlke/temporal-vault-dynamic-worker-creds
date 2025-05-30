@@ -118,7 +118,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: temporal-infra-worker-config
-  namespace: default
+  namespace: temporal-workers
 data:
   TEMPORAL_ADDRESS: "<your-temporal-host-url>"
   TEMPORAL_NAMESPACE: "<your-temporal-namespace>"
@@ -147,19 +147,19 @@ Monitor certificate rotation and view certificate details:
 
 ```bash
 # View the secret details
-kubectl get secret temporal-tls-certs -o yaml
+kubectl get secret temporal-tls-certs -n temporal-workers -o yaml
 
 # Check certificate content
-kubectl get secret temporal-tls-certs -o jsonpath='{.data.certificate}' | base64 -d
+kubectl get secret temporal-tls-certs -n temporal-workers -o jsonpath='{.data.certificate}' | base64 -d
 
 # Check CA chain
-kubectl get secret temporal-tls-certs -o jsonpath='{.data.ca_chain}' | base64 -d
+kubectl get secret temporal-tls-certs -n temporal-workers -o jsonpath='{.data.ca_chain}' | base64 -d
 
 # Watch certificate rotation in real-time
-watch -n 5 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.certificate}' | base64 -d | openssl x509 -noout -dates"
+watch -n 5 "kubectl get secret temporal-tls-certs -n temporal-workers -o jsonpath='{.data.certificate}' | base64 -d | openssl x509 -noout -dates"
 
 # Monitor certificate subject and expiration
-watch -n 5 "kubectl get secret temporal-tls-certs -o jsonpath='{.data.certificate}' | base64 -d | openssl x509 -noout -subject -dates"
+watch -n 5 "kubectl get secret temporal-tls-certs -n temporal-workers -o jsonpath='{.data.certificate}' | base64 -d | openssl x509 -noout -subject -dates"
 ```
 
 ### API Key Monitoring
@@ -168,16 +168,16 @@ Monitor API key synchronization:
 
 ```bash
 # Check if the secret exists and has data
-kubectl get secret temporal-api-key -o yaml
+kubectl get secret temporal-api-key -n temporal-workers -o yaml
 
 # Verify the API key is present (without revealing the actual key)
-kubectl get secret temporal-api-key -o jsonpath='{.data.TEMPORAL_API_KEY}' | base64 -d | wc -c
+kubectl get secret temporal-api-key -n temporal-workers -o jsonpath='{.data.TEMPORAL_API_KEY}' | base64 -d | wc -c
 
 # Check VaultStaticSecret status for sync issues
-kubectl describe vaultstaticsecret temporal-api-key
+kubectl describe vaultstaticsecret temporal-api-key -n temporal-workers
 
 # Monitor secret updates
-kubectl get events --field-selector involvedObject.name=temporal-api-key --watch
+kubectl get events -n temporal-workers --field-selector involvedObject.name=temporal-api-key --watch
 ```
 
 ### General Vault Secrets Operator Monitoring
@@ -219,7 +219,7 @@ When your API key needs to be rotated:
 # For mTLS deployment
 kubectl delete -f kubernetes/certs/deployment-temporal-infra-worker-vso.yaml
 
-# For API key deployment  
+# For API key deployment
 kubectl delete -f kubernetes/api_keys/deployment-temporal-infra-worker-vso.yaml
 ```
 
@@ -236,3 +236,8 @@ terraform destroy -auto-approve -var "kubernetes_host=$KUBERNETES_PORT_443_TCP_A
 minikube stop
 minikube delete
 ```
+
+## Notes
+
+- The worker is deployed in the `temporal-workers` namespace for better organization and security isolation
+- All secrets and configurations are scoped to this dedicated namespace

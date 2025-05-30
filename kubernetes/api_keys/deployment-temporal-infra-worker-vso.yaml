@@ -1,23 +1,29 @@
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: temporal-workers
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: temporal-infra-worker
-  namespace: default
+  namespace: temporal-workers
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultConnection
 metadata:
   name: vault-connection
-  namespace: default
+  namespace: temporal-workers
 spec:
   address: http://vault:8200
+  skipTLSVerify: true
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
 metadata:
   name: vault-auth-temporal-infra-worker
-  namespace: default
+  namespace: temporal-workers
 spec:
   vaultConnectionRef: vault-connection
   method: kubernetes
@@ -30,18 +36,18 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: temporal-api-key
-  namespace: default
+  namespace: temporal-workers
 type: Opaque
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
   name: temporal-api-key
-  namespace: default
+  namespace: temporal-workers
 spec:
   vaultAuthRef: vault-auth-temporal-infra-worker
   mount: secret
-  type: kv-v2
+  type: kv-v1
   path: temporal-cloud
   destination:
     name: temporal-api-key
@@ -54,7 +60,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: temporal-infra-worker-config
-  namespace: default
+  namespace: temporal-workers
 data:
   TEMPORAL_ADDRESS: "us-west-2.aws.api.temporal.io:7233"
   TEMPORAL_NAMESPACE: "neil-vault-api-keys-c9f141c8.sdvdw"
@@ -66,7 +72,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
    name: temporal-infra-worker
-   namespace: default
+   namespace: temporal-workers
    labels:
       app: temporal-infra-worker
 spec:

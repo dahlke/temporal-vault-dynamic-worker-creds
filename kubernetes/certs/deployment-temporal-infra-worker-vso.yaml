@@ -3,13 +3,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: temporal-infra-worker
-  namespace: default
+  namespace: temporal-workers
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultConnection
 metadata:
   name: vault-connection
-  namespace: default
+  namespace: temporal-workers
 spec:
   address: http://vault:8200
 ---
@@ -17,7 +17,7 @@ apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
 metadata:
   name: vault-auth-temporal-infra-worker
-  namespace: default
+  namespace: temporal-workers
 spec:
   vaultConnectionRef: vault-connection
   method: kubernetes
@@ -30,17 +30,17 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: temporal-tls-certs
-  namespace: default
+  namespace: temporal-workers
 type: Opaque
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultPKISecret
 metadata:
-  namespace: default
+  namespace: temporal-workers
   name: vaultpkisecret-temporal-infra-worker
 spec:
   vaultAuthRef: vault-auth-temporal-infra-worker
-  namespace: default
+  namespace: temporal-workers
   mount: pki_int
   role: temporal-infra-worker
   destination:
@@ -57,7 +57,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: temporal-infra-worker-config
-  namespace: default
+  namespace: temporal-workers
 data:
   TEMPORAL_ADDRESS: "neil-vault-cert-rotation-demo-f616a12e.sdvdw.tmprl.cloud:7233"
   TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-f616a12e.sdvdw"
@@ -69,7 +69,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
    name: temporal-infra-worker
-   namespace: default
+   namespace: temporal-workers
    labels:
       app: temporal-infra-worker
 spec:
