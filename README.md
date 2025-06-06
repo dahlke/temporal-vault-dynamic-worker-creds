@@ -19,14 +19,12 @@ This project demonstrates two approaches for securely managing Temporal Cloud au
 
 - **Automatic Rotation**: Uses Vault's PKI secrets engine to generate and automatically rotate client certificates
 - **Zero Maintenance**: Certificates are automatically renewed before expiration
-- **Highest Security**: Provides the strongest authentication method with no manual intervention required
 - **Location**: `terraform/certs/` and `kubernetes/certs/`
 
 ### API Key Authentication
 
 - **Manual Management**: Uses Vault's KV secrets engine to store static API keys
 - **Operational Overhead**: Requires manual updates when API keys need to be rotated
-- **Simpler Setup**: Easier initial configuration but requires ongoing maintenance
 - **Location**: `terraform/api_keys/` and `kubernetes/api_keys/`
 
 ## Environment Setup
