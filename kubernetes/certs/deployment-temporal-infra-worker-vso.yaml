@@ -52,7 +52,7 @@ spec:
     name: temporal-tls-certs
   commonName: worker.dahlke.io
   format: pem
-  expiryOffset: 5s
+  expiryOffset: 15s
   ttl: 60s
   rolloutRestartTargets:
     - kind: Deployment
@@ -64,8 +64,8 @@ metadata:
   name: temporal-infra-worker-config
   namespace: temporal-workers
 data:
-  TEMPORAL_ADDRESS: "neil-vault-cert-rotation-demo-8e4ae393.sdvdw.tmprl.cloud:7233"
-  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-8e4ae393.sdvdw"
+  TEMPORAL_ADDRESS: "neil-vault-cert-rotation-demo-4847362a.sdvdw.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE: "neil-vault-cert-rotation-demo-4847362a.sdvdw"
   TEMPORAL_TASK_QUEUE: "provision-infra"
   TF_VAR_prefix: "neil"
   ENCRYPT_PAYLOADS: "true"
