@@ -45,7 +45,7 @@ helm repo update
 
 kubectl create namespace vault
 
-helm install -n vault vault hashicorp/vault --set "server.dev.enabled=true"
+helm install -n vault vault hashicorp/vault --set "server.dev.enabled=true" --set "injector.enabled=false"
 helm install -n vault vault-secrets-operator hashicorp/vault-secrets-operator
 ```
 
