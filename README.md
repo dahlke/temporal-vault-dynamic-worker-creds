@@ -212,6 +212,8 @@ When your API key needs to be rotated:
 
 3. The worker pod will automatically restart to pick up the new credentials (due to the `rolloutRestartTargets` configuration).
 
+> **Note**: The rolling deployment bounces all pods so they can grab their new auth material. This approach is used because not all Temporal SDKs support hot swapping of credentials, so this demo is designed to work as an illustration for all SDKs.
+
 ## Cleanup
 
 ### Remove Kubernetes Resources
